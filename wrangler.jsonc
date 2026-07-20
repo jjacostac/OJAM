@@ -1,0 +1,14 @@
+{
+  // Configuración para desplegar el frontend de OJAM como sitio
+  // estático en Cloudflare (Workers con "static assets"). No hay
+  // código de servidor: solo se sirve la carpeta frontend/.
+  //
+  // El flujo "Create a Worker" de Cloudflare ejecuta
+  // `npx wrangler deploy`, que lee este archivo y sube frontend/.
+  // El archivo frontend/_headers aplica las cabeceras de caché.
+  "name": "ojam",
+  "compatibility_date": "2025-06-01",
+  "assets": {
+    "directory": "./frontend"
+  }
+}
