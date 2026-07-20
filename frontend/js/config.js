@@ -13,13 +13,13 @@ export const CONFIG = {
   // de desarrollo. EDITAR al desplegar.
   API_URL: esLocal
     ? 'http://localhost:8787'
-    : 'https://CAMBIA-ESTO.onrender.com',
+    : 'https://ojam.onrender.com',
 
   // Solo los usa el panel de administración (admin.html) para
-  // iniciar sesión. La anon key es pública por diseño de Supabase;
-  // la service role key JAMÁS va aquí.
-  SUPABASE_URL: 'https://CAMBIA-ESTO.supabase.co',
-  SUPABASE_ANON_KEY: 'CAMBIA-ESTO',
+  // iniciar sesión. La llave publishable es pública por diseño de
+  // Supabase; la llave secret JAMÁS va aquí.
+  SUPABASE_URL: 'https://sxcyaaqdgrpkcjjpbggu.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_4LbfUHBkmtqfFps2ka3G0A_vDBKsMIc',
 
   // Identidad del observatorio (para replicar en otra región,
   // basta cambiar estos textos y el GeoJSON de límites).
