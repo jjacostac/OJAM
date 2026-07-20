@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OJAM — Observatorio de Justicia Ambiental del Magdalena</title>
+  <meta name="description" content="Observatorio ciudadano de código abierto para reportar y visualizar conflictos ambientales georreferenciados en el departamento del Magdalena, Colombia.">
+  <meta name="theme-color" content="#14532D">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/map.css">
+</head>
+<body data-vista="mapa">
+  <!-- Pantalla de carga (estilo EJAtlas): cubre la interfaz hasta
+       que el mapa y los datos estén listos. La retira app.js. -->
+  <div id="pantalla-carga" class="pantalla-carga" role="status">
+    <div class="carga-caja">
+      <span class="carga-giro" aria-hidden="true"></span>
+      <span>Cargando la plataforma…</span>
+    </div>
+  </div>
+
+  <a class="salto" href="#mapa">Saltar al mapa</a>
+
+  <!-- Barra superior fija con identidad OJAM -->
+  <header class="encabezado">
+    <a class="marca" href="./" aria-label="OJAM — inicio">
+      <img class="logo-redondo" src="assets/logo-cuadrado.svg" alt="" width="62" height="62">
+      <strong class="marca-ojam">OJAM</strong>
+    </a>
+    <h1 class="nombre-plataforma"><span>Observatorio de Justicia</span><br><span>Ambiental para el Magdalena</span></h1>
+    <button type="button" class="btn btn-neon btn-lupa" id="btn-lupa"
+            aria-expanded="false" aria-controls="panel-busqueda">
+      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+        <defs>
+          <linearGradient id="grad-lupa" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FDE047"/>
+            <stop offset="1" stop-color="#00CED1"/>
+          </linearGradient>
+        </defs>
+        <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="url(#grad-lupa)" stroke-width="3"/>
+        <path d="m15.5 15.5 5.5 5.5" stroke="url(#grad-lupa)" stroke-width="3.4" stroke-linecap="round"/>
+      </svg>
+      Investiga a fondo
+    </button>
+  </header>
+
+  <!-- Panel de búsqueda avanzada: se despliega desde la derecha por
+       encima de la interfaz (lo abre la lupa de la fila de filtros) -->
+  <aside class="panel-busqueda" id="panel-busqueda" aria-label="Búsqueda avanzada">
+    <div class="busqueda-cabecera">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+          <path d="m15.5 15.5 5.5 5.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+        </svg>
+        Búsqueda avanzada
+      </h2>
+      <button type="button" class="btn-cerrar-busqueda" id="btn-cerrar-busqueda"
+              aria-label="Cerrar búsqueda avanzada">×</button>
+    </div>
+    <p class="ayuda">Filtros específicos para indagar los casos de la base de datos.</p>
+    <fieldset class="campo-filtro campo-fechas">
+      <legend>Rango de fechas</legend>
+      <label><span class="visualmente-oculto">Desde</span>
+        <input type="date" id="f-desde" aria-label="Desde"></label>
+      <span aria-hidden="true">–</span>
+      <label><span class="visualmente-oculto">Hasta</span>
+        <input type="date" id="f-hasta" aria-label="Hasta"></label>
+    </fieldset>
+    <!-- Archivero: línea de tiempo de casos (interior por desarrollar) -->
+    <div class="linea-tiempo" id="linea-tiempo" aria-label="Línea de tiempo de casos">
+      <p>Línea de tiempo de los casos — en construcción</p>
+    </div>
+    <label class="campo-filtro">
+      <span>Actor involucrado</span>
+      <input type="text" id="f-actor" placeholder="Ej.: empresa, entidad, grupo…">
+    </label>
+    <label class="campo-filtro">
+      <span>Buscar en el texto</span>
+      <input type="search" id="f-texto" placeholder="Palabras del título o la descripción">
+    </label>
+    <div class="busqueda-acciones">
+      <details class="descarga">
+        <summary class="btn btn-blanco">Descargar datos</summary>
+        <div class="descarga-opciones">
+          <button type="button" class="btn btn-blanco" id="btn-csv">CSV</button>
+          <button type="button" class="btn btn-blanco" id="btn-geojson">GeoJSON</button>
+        </div>
+      </details>
+      <button type="button" class="btn btn-primario" id="btn-aplicar-busqueda">Aplicar filtros</button>
+      <button type="button" class="btn btn-blanco" id="btn-limpiar">Limpiar filtros</button>
+    </div>
+  </aside>
+
+  <main class="principal">
+    <!-- Panel izquierdo de categorías con contadores -->
+    <aside class="panel-categorias" aria-label="Categorías y filtros">
+      <!-- Filtros del mapa, integrados al recuadro de categorías -->
+      <form class="filtros" id="form-filtros" aria-label="Filtros del mapa">
+        <div class="filtros-fila">
+          <label class="campo-filtro">
+            <span>Categoría</span>
+            <select id="f-categoria">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <label class="campo-filtro">
+            <span>Municipio</span>
+            <select id="f-municipio">
+              <option value="">Todos</option>
+            </select>
+          </label>
+          <label class="campo-filtro">
+            <span>Fecha</span>
+            <select id="f-mes">
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <button type="submit" class="btn btn-primario" id="btn-filtrar">Filtrar</button>
+        </div>
+      </form>
+      <h2 class="panel-categorias-titulo">Categorías</h2>
+      <ul id="lista-categorias" class="lista-categorias"></ul>
+    </aside>
+
+    <!-- Mapa -->
+    <div class="zona-mapa">
+      <div id="mapa" role="region" aria-label="Mapa de conflictos ambientales"></div>
+    </div>
+
+    <!-- Panel lateral con dos estados: lista y detalle (ref. EJAtlas) -->
+    <aside class="panel-lateral" aria-label="Casos">
+      <button type="button" id="btn-colapsar" class="btn-colapsar"
+              aria-expanded="true" title="Ocultar panel de casos">»</button>
+      <div id="panel-contenido" class="panel-contenido" aria-live="polite">
+        <p class="panel-vacio">Cargando casos…</p>
+      </div>
+      <div class="acciones-panel">
+        <button type="button" class="btn btn-neon" id="btn-agregar">
+          <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+            <defs>
+              <linearGradient id="grad-peligro" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#FDE047"/>
+                <stop offset="1" stop-color="#00CED1"/>
+              </linearGradient>
+            </defs>
+            <path d="M12 2.6 23 21.4H1Z" fill="url(#grad-peligro)"
+                  stroke="#064E3B" stroke-width="1.4" stroke-linejoin="round"/>
+            <path d="M11.05 9.2h1.9l-.3 5.3h-1.3l-.3-5.3Zm.95 6.4a1.15 1.15 0 1 1 0 2.3 1.15 1.15 0 0 1 0-2.3Z"
+                  fill="#064E3B"/>
+          </svg>
+          Agregar tu injusticia
+        </button>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Subvista: formulario de reporte (misma página, history API) -->
+  <section class="vista-formulario" id="vista-formulario" aria-label="Formulario de reporte">
+    <div class="formulario-caja">
+      <h2 id="titulo-formulario" tabindex="-1">Agregar tu injusticia</h2>
+      <p class="formulario-intro">
+        Tu reporte entra a una cola de revisión. Una vez aprobado por el equipo de
+        curaduría, aparecerá publicado en el mapa. La fecha y hora de carga se
+        registran automáticamente al enviar.
+      </p>
+
+      <form id="form-reporte" novalidate>
+        <label class="campo">
+          <span>Nombre de la problemática <em>*</em></span>
+          <input type="text" id="r-nombre" required maxlength="200"
+                 placeholder="Ej.: Vertimiento de residuos al río">
+        </label>
+
+        <label class="campo">
+          <span>Municipio <em>*</em></span>
+          <select id="r-municipio" required>
+            <option value="">Selecciona…</option>
+          </select>
+        </label>
+
+        <div class="campo">
+          <span class="campo-etiqueta">Ubicación del problema <em>*</em></span>
+          <p class="ayuda">
+            Usa el GPS del dispositivo o toca el minimapa para marcar el punto.
+            Puedes arrastrar el pin o corregir las coordenadas a mano si el GPS falla.
+          </p>
+          <button type="button" class="btn btn-secundario" id="btn-gps">📍 Usar mi ubicación GPS</button>
+          <div id="minimapa" class="minimapa" aria-label="Minimapa para seleccionar el punto"></div>
+          <div class="coordenadas">
+            <label><span>Latitud</span>
+              <input type="number" id="r-lat" step="any" min="-90" max="90" inputmode="decimal"></label>
+            <label><span>Longitud</span>
+              <input type="number" id="r-lon" step="any" min="-180" max="180" inputmode="decimal"></label>
+          </div>
+        </div>
+
+        <label class="campo">
+          <span>Descripción de la problemática <em>*</em></span>
+          <textarea id="r-descripcion" rows="5" required maxlength="10000"
+                    placeholder="¿Qué está pasando? ¿Desde cuándo? ¿A quiénes afecta? Si tienes enlaces a noticias, pégalos aquí."></textarea>
+        </label>
+
+        <label class="campo">
+          <span>Fecha de ocurrencia del problema</span>
+          <input type="date" id="r-fecha">
+        </label>
+
+        <label class="campo">
+          <span>Actores involucrados</span>
+          <input type="text" id="r-actores" maxlength="2000"
+                 placeholder="Empresas, entidades u organizaciones relacionadas">
+        </label>
+
+        <label class="campo">
+          <span>Tipo de injusticia <em>*</em></span>
+          <select id="r-categoria" required>
+            <option value="">Selecciona…</option>
+          </select>
+        </label>
+
+        <div class="campo campo-anonimato">
+          <label class="check">
+            <input type="checkbox" id="r-anonimo">
+            <span>Reportar de forma anónima</span>
+          </label>
+          <p class="ayuda">
+            Si reportas de forma anónima <strong>no se guarda ningún dato de
+            contacto</strong> y el equipo de curaduría no podrá escribirte para
+            pedir más información sobre el caso. Si dejas un contacto, se usa
+            únicamente para eso: nunca se publica en el mapa ni en los datos
+            abiertos, y solo lo ve el equipo administrador.
+          </p>
+        </div>
+
+        <label class="campo" id="campo-contacto">
+          <span>Contacto (opcional): correo o teléfono</span>
+          <input type="text" id="r-contacto" maxlength="200"
+                 placeholder="Solo para que la curaduría pueda contactarte">
+        </label>
+
+        <p id="form-msg" class="form-msg" role="status" tabindex="-1"></p>
+
+        <div class="formulario-acciones">
+          <button type="button" class="btn btn-terciario" onclick="history.back()">← Volver al mapa</button>
+          <button type="submit" class="btn btn-primario" id="btn-enviar">Enviar reporte</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Franja de logos institucionales (placeholders editables) -->
+  <footer class="pie">
+    <div class="aliados" aria-label="Instituciones aliadas">
+      <img src="assets/partners/aliado-1.svg" alt="Universidad del Magdalena (placeholder)" height="44">
+      <img src="assets/partners/aliado-2.svg" alt="CORPAMAG (placeholder)" height="44">
+      <img src="assets/partners/aliado-3.svg" alt="Aliado institucional (placeholder)" height="44">
+    </div>
+    <p class="creditos">
+      OJAM es una plataforma de código abierto. Datos publicados bajo licencia
+      <a href="https://creativecommons.org/licenses/by/4.0/deed.es" target="_blank" rel="noopener">CC BY 4.0</a>.
+      Límites municipales: DANE, Marco Geoestadístico Nacional 2018.
+    </p>
+  </footer>
+
+  <div id="avisos" class="avisos" role="status" aria-live="polite"></div>
+
+  <noscript>
+    <p class="sin-js">OJAM necesita JavaScript para mostrar el mapa de conflictos.</p>
+  </noscript>
+
+  <script src="vendor/leaflet/leaflet.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

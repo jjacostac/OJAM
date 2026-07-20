@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OJAM — Panel de administración</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#14532D">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/map.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+  <header class="encabezado">
+    <a class="marca" href="./" aria-label="Volver al mapa público">
+      <img src="assets/logo.svg" alt="" width="40" height="40">
+      <span class="marca-texto">
+        <strong>OJAM</strong>
+        <small>Panel de administración</small>
+      </span>
+    </a>
+    <div class="sesion" id="sesion" hidden>
+      <span id="sesion-correo" class="sesion-correo"></span>
+      <button type="button" class="btn btn-terciario" id="btn-salir">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <!-- Ingreso (Supabase Auth: email + contraseña) -->
+  <section class="ingreso" id="vista-ingreso">
+    <form class="ingreso-caja" id="form-ingreso">
+      <h1>Ingreso de administración</h1>
+      <p class="ayuda">
+        Acceso exclusivo para el equipo de curaduría de OJAM.
+        La ciudadanía no necesita cuenta para reportar.
+      </p>
+      <label class="campo">
+        <span>Correo</span>
+        <input type="email" id="in-correo" autocomplete="username" required>
+      </label>
+      <label class="campo">
+        <span>Contraseña</span>
+        <input type="password" id="in-clave" autocomplete="current-password" required>
+      </label>
+      <p id="ingreso-msg" class="form-msg" role="status"></p>
+      <button type="submit" class="btn btn-primario" id="btn-ingresar">Ingresar</button>
+    </form>
+  </section>
+
+  <!-- Aplicación de administración -->
+  <main class="admin-app" id="vista-admin" hidden>
+    <nav class="pestanas" aria-label="Secciones de administración">
+      <button type="button" class="pestana activa" data-seccion="pendientes">Cola de pendientes <span id="cuenta-pendientes" class="pildora"></span></button>
+      <button type="button" class="pestana" data-seccion="reportes">Todos los reportes</button>
+      <button type="button" class="pestana" data-seccion="whatsapp">Cargar de WhatsApp</button>
+      <button type="button" class="pestana" data-seccion="categorias">Categorías</button>
+      <button type="button" class="pestana" data-seccion="exportar">Exportar</button>
+    </nav>
+
+    <section class="seccion" id="seccion-pendientes">
+      <h2>Reportes pendientes de revisión</h2>
+      <p class="ayuda">Cada aprobación o rechazo queda registrado en el historial de auditoría.</p>
+      <div id="lista-pendientes" class="lista-admin"></div>
+    </section>
+
+    <section class="seccion" id="seccion-reportes" hidden>
+      <h2>Todos los reportes</h2>
+      <label class="campo campo-inline">
+        <span>Filtrar por estado</span>
+        <select id="filtro-estado">
+          <option value="">Todos</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="aprobado">Aprobados</option>
+          <option value="rechazado">Rechazados</option>
+        </select>
+      </label>
+      <div id="lista-reportes" class="lista-admin"></div>
+    </section>
+
+    <section class="seccion" id="seccion-whatsapp" hidden>
+      <h2>Transcribir reporte recibido por WhatsApp</h2>
+      <p class="ayuda">
+        Mismos campos que el formulario público. El canal de origen queda
+        registrado como <strong>whatsapp</strong> y el reporte entra a la cola
+        de pendientes para su aprobación formal.
+      </p>
+      <form id="form-whatsapp" class="form-admin" novalidate>
+        <label class="campo"><span>Nombre de la problemática *</span>
+          <input type="text" id="w-nombre" maxlength="200" required></label>
+        <label class="campo"><span>Municipio *</span>
+          <input type="text" id="w-municipio" maxlength="100" required list="lista-municipios"></label>
+        <datalist id="lista-municipios"></datalist>
+        <div class="campo">
+          <span class="campo-etiqueta">Ubicación *</span>
+          <div id="minimapa-whatsapp" class="minimapa"></div>
+          <div class="coordenadas">
+            <label><span>Latitud</span><input type="number" id="w-lat" step="any"></label>
+            <label><span>Longitud</span><input type="number" id="w-lon" step="any"></label>
+          </div>
+        </div>
+        <label class="campo"><span>Descripción *</span>
+          <textarea id="w-descripcion" rows="5" maxlength="10000" required></textarea></label>
+        <label class="campo"><span>Fecha de ocurrencia</span>
+          <input type="date" id="w-fecha"></label>
+        <label class="campo"><span>Actores involucrados</span>
+          <input type="text" id="w-actores" maxlength="2000"></label>
+        <label class="campo"><span>Tipo de injusticia *</span>
+          <select id="w-categoria"><option value="">Selecciona…</option></select></label>
+        <label class="check campo">
+          <input type="checkbox" id="w-anonimo">
+          <span>La persona pidió reportar de forma anónima</span>
+        </label>
+        <label class="campo" id="w-campo-contacto"><span>Contacto de quien reportó (opcional)</span>
+          <input type="text" id="w-contacto" maxlength="200"></label>
+        <p id="whatsapp-msg" class="form-msg" role="status"></p>
+        <button type="submit" class="btn btn-primario">Guardar en la cola</button>
+      </form>
+    </section>
+
+    <section class="seccion" id="seccion-categorias" hidden>
+      <h2>Categorías (tipos de injusticia)</h2>
+      <p class="ayuda">
+        Los colores del mapa y las opciones del formulario público salen de esta
+        tabla. Los cambios se reflejan al recargar la vista pública.
+      </p>
+      <div id="lista-cats" class="lista-admin"></div>
+      <h3>Nueva categoría</h3>
+      <form id="form-cat" class="fila-cat" novalidate>
+        <input type="text" id="c-nombre" placeholder="Nombre" maxlength="80" required>
+        <input type="color" id="c-color" value="#2D6A4F" aria-label="Color">
+        <input type="text" id="c-icono" placeholder="ícono (ej. agua)" maxlength="40">
+        <input type="number" id="c-orden" placeholder="Orden" value="100" min="0" max="999">
+        <button type="submit" class="btn btn-primario">Crear</button>
+      </form>
+      <p id="cats-msg" class="form-msg" role="status"></p>
+    </section>
+
+    <section class="seccion" id="seccion-exportar" hidden>
+      <h2>Exportar base institucional completa</h2>
+      <p class="ayuda">
+        Incluye todos los estados, el canal de origen, el contacto de quien
+        reporta y la trazabilidad. <strong>Uso institucional: no publicar.</strong>
+        Para datos abiertos, usa el botón «Descargar datos» del mapa público.
+      </p>
+      <div class="acciones-export">
+        <button type="button" class="btn btn-secundario" data-export="reportes-csv">Reportes completos (CSV)</button>
+        <button type="button" class="btn btn-secundario" data-export="reportes-geojson">Reportes completos (GeoJSON)</button>
+        <button type="button" class="btn btn-secundario" data-export="auditoria-csv">Historial de auditoría (CSV)</button>
+      </div>
+      <p id="export-msg" class="form-msg" role="status"></p>
+    </section>
+  </main>
+
+  <div id="avisos" class="avisos" role="status" aria-live="polite"></div>
+
+  <script src="vendor/leaflet/leaflet.js" defer></script>
+  <script type="module" src="js/admin/admin.js"></script>
+</body>
+</html>

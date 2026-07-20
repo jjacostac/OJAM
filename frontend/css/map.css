@@ -1,0 +1,155 @@
+/* ============================================================
+   OJAM — estilo cartográfico
+   Paleta de referencia EJAtlas: tierra beige/tostado claro, mar
+   azul claro, vegetación en verde, vías naranja. Se logra con un
+   ajuste de color CSS sobre las teselas estándar de OSM: cero
+   peso adicional de descarga.
+   ============================================================ */
+
+/* Fondo del contenedor: turquesa (se ve mientras cargan teselas,
+   coherente con el mar del estilo OJAM). */
+#mapa { width: 100%; height: 100%; background: #5BC8CE; }
+
+/* Tinte del mapa base "Mapa OJAM" (CARTO Voyager sin rótulos):
+   empuja el mar hacia un turquesa vivo (tendiendo a #00CED1) y
+   oscurece levemente la tierra crema hacia un floralwhite grisáceo
+   de costa árida. Es un filtro global sobre teselas raster: no
+   permite fijar un hex exacto por elemento, pero acerca la paleta. */
+/* El filtro va sobre cada tesela (no sobre el panel completo): así
+   el navegador conserva cada imagen ya filtrada y la animación de
+   zoom solo escala, sin repintar todo el panel — se elimina el
+   destello del color del mar al acercar/alejar. */
+.estilo-ejatlas .leaflet-tile {
+  filter: saturate(2.35) hue-rotate(-6deg) brightness(.94) contrast(1.06);
+}
+
+/* Mapa a pantalla completa ("Ver mapa con más detalles") */
+body.mapa-completo .zona-mapa {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  height: auto;
+  min-height: 0;
+}
+
+/* Nombres de municipios: negrita + halo blanco + color propio.
+   Mejora deliberada sobre la referencia EJAtlas (que usa texto
+   simple) para legibilidad en campo: pantallas pequeñas y sol. */
+.etiqueta-municipio {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #065F46; /* verde esmeralda oscuro */
+  text-shadow:
+    -1px -1px 0 #fff, 1px -1px 0 #fff,
+    -1px 1px 0 #fff, 1px 1px 0 #fff,
+    0 0 4px #fff;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  width: max-content !important;
+  height: auto !important;
+}
+
+.sin-etiquetas .etiqueta-municipio { display: none; }
+
+/* Contorno del departamento: línea jade (esmeralda grisáceo, con
+   brillo natural) y halo blanco difuminado que fija la vista en
+   los límites del Magdalena sin verse "radiactivo". */
+.contorno-departamento {
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, .9))
+          drop-shadow(0 0 6px rgba(102, 182, 149, .6));
+}
+
+/* Logo OJAM redondo, sin fondo, esquina superior izquierda. */
+.logo-mapa { pointer-events: none; }
+.logo-mapa img {
+  display: block;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  filter: drop-shadow(0 1px 5px rgba(0, 0, 0, .35));
+}
+
+/* Zoom (+/−) horizontal: misma fila y misma altura que el botón de
+   capas (opciones de visualización), a su derecha. */
+.leaflet-control-layers-toggle { width: 44px !important; height: 44px !important; }
+
+.leaflet-bottom.leaflet-left .leaflet-control-zoom { display: flex; }
+.leaflet-bottom.leaflet-left .leaflet-control-zoom a {
+  width: 44px;
+  height: 44px;
+  line-height: 42px;
+  font-size: 20px;
+  border-bottom: none;
+}
+.leaflet-bottom.leaflet-left .leaflet-control-zoom a:first-child {
+  border-right: 1px solid #d4cfc4;
+  border-radius: 8px 0 0 8px;
+}
+.leaflet-bottom.leaflet-left .leaflet-control-zoom a:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+/* Leyenda superpuesta, esquina inferior izquierda */
+.leyenda {
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid #E4DDD2;
+  border-radius: 8px;
+  padding: .45rem .6rem;
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 1px 3px rgba(31, 41, 55, .15);
+  max-width: 200px;
+}
+.leyenda strong {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #57534E;
+  margin-bottom: .15rem;
+}
+.leyenda-fila { display: flex; align-items: center; gap: .4rem; }
+.leyenda-punto {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex: none;
+  border: 1px solid rgba(0, 0, 0, .18);
+  display: inline-block;
+}
+
+/* Controles Leaflet afinados a la interfaz */
+.leaflet-container {
+  font-family: inherit;
+  font-size: 13px;
+}
+.leaflet-control-zoom a { color: #14532D; }
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, .85);
+  font-size: 11px;
+}
+.leaflet-control-attribution a { color: #14532D; }
+
+.leaflet-tooltip {
+  font-weight: 600;
+  border-radius: 6px;
+  border-color: #E4DDD2;
+}
+
+/* Pin arrastrable del selector de punto (formulario/admin):
+   gota dibujada en CSS, sin imágenes. */
+.pin-seleccion span {
+  display: block;
+  width: 22px; height: 22px;
+  background: #B45309;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .4);
+}
+
+/* Los puntos de conflicto (circleMarker SVG) heredan su color de
+   la tabla `categorias` vía JS — aquí solo el cursor. */
+.leaflet-interactive { cursor: pointer; }

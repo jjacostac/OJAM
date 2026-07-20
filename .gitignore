@@ -1,0 +1,18 @@
+# Secretos y configuración local — NUNCA subir al repositorio público
+.env
+.env.*
+!.env.example
+frontend/js/config.local.js
+
+# Dependencias
+node_modules/
+
+# Datos reales — este repositorio es solo plantilla
+datos/
+*.backup.sql
+export-*.csv
+export-*.geojson
+
+# Sistema
+.DS_Store
+Thumbs.db

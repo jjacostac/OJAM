@@ -1,0 +1,29 @@
+# Configuración de Netlify para el frontend OJAM.
+# El sitio es 100% estático: no hay paso de build.
+
+[build]
+  publish = "frontend"
+
+# El service worker no debe quedar cacheado por el navegador:
+# controla las actualizaciones de todo lo demás.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Assets con caché larga (Netlify sirve gzip/brotli automático).
+[[headers]]
+  for = "/vendor/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
